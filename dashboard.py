@@ -1,5 +1,4 @@
-import asyncio
-asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+ 
 
 import streamlit as st
 import chess
@@ -74,9 +73,11 @@ analysis_board = board.copy()
 try:
     engine = chess.engine.SimpleEngine.popen_uci("/usr/games/stockfish")
 except:
-    st.error("Stockfish engine not found")
-    st.stop()
-
+    try:
+        engine = chess.engine.SimpleEngine.popen_uci("stockfish")
+    except:
+        st.error("Stockfish engine not available on server")
+        st.stop()
 for move in game.mainline_moves():
 
     analysis_board.push(move)
