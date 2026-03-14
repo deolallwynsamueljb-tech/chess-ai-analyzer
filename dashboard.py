@@ -12,13 +12,18 @@ import shutil
  
 # ---------------- ENGINE LOADER ----------------
 
+import chess.engine
+from stockfish import Stockfish
+
 def load_engine():
 
-    # Try automatic detection
-    path = shutil.which("stockfish")
+    # create stockfish instance from python package
+    sf = Stockfish()
 
-    if path:
-        return chess.engine.SimpleEngine.popen_uci(path)
+    # get the binary path
+    engine_path = sf._stockfish_executable
+
+    return chess.engine.SimpleEngine.popen_uci(engine_path)
 
     # Common Linux locations (Streamlit Cloud)
     possible_paths = [
