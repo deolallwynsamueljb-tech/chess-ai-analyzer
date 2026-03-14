@@ -9,18 +9,7 @@ from streamlit.components.v1 import html
 import os
 import shutil
  
-
-import streamlit as st
-import chess
-import chess.pgn
-import chess.engine
-import chess.svg
-import matplotlib.pyplot as plt
-import io
-from streamlit.components.v1 import html
-import os
-import shutil
-
+ 
 # ---------------- ENGINE LOADER ----------------
 
 def load_engine():
