@@ -72,7 +72,7 @@ evaluations = []
 analysis_board = board.copy()
 
 try:
-    engine = chess.engine.SimpleEngine.popen_uci("stockfish.exe")
+    engine = chess.engine.SimpleEngine.popen_uci("/usr/games/stockfish")
 except:
     st.error("Stockfish engine not found")
     st.stop()
