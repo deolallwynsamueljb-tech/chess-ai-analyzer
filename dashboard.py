@@ -73,11 +73,7 @@ analysis_board = board.copy()
 try:
     engine = chess.engine.SimpleEngine.popen_uci("/usr/games/stockfish")
 except:
-    try:
-        engine = chess.engine.SimpleEngine.popen_uci("stockfish")
-    except:
-        st.error("Stockfish engine not available on server")
-        st.stop()
+    engine = chess.engine.SimpleEngine.popen_uci("stockfish")
 for move in game.mainline_moves():
 
     analysis_board.push(move)
