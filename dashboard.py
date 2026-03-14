@@ -6,6 +6,45 @@ import chess.svg
 import matplotlib.pyplot as plt
 import io
 from streamlit.components.v1 import html
+import os
+import shutil
+ 
+
+import streamlit as st
+import chess
+import chess.pgn
+import chess.engine
+import chess.svg
+import matplotlib.pyplot as plt
+import io
+from streamlit.components.v1 import html
+import os
+import shutil
+
+# ---------------- ENGINE LOADER ----------------
+
+def load_engine():
+
+    # Try automatic detection
+    path = shutil.which("stockfish")
+
+    if path:
+        return chess.engine.SimpleEngine.popen_uci(path)
+
+    # Common Linux locations (Streamlit Cloud)
+    possible_paths = [
+        "/usr/games/stockfish",
+        "/usr/bin/stockfish",
+        "/home/adminuser/venv/bin/stockfish"
+    ]
+
+    for p in possible_paths:
+        if os.path.exists(p):
+            return chess.engine.SimpleEngine.popen_uci(p)
+
+    raise RuntimeError("Stockfish engine not found")
+
+# ---------------- PAGE ----------------
 
 st.set_page_config(layout="wide")
 st.title("♟ Chess AI Analyzer")
@@ -25,11 +64,7 @@ depth = st.sidebar.slider("Engine Depth", 8, 20, 12)
 
 # ---------------- ENGINE ----------------
 
-def load_engine():
-    try:
-        return chess.engine.SimpleEngine.popen_uci("/usr/games/stockfish")
-    except:
-        return chess.engine.SimpleEngine.popen_uci("stockfish")
+ 
 
 # ---------------- MOVE CLASSIFICATION ----------------
 
