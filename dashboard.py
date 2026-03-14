@@ -11,25 +11,23 @@ import zipfile
 import stat
 from streamlit.components.v1 import html
 
-# ---------------- ENGINE SETUP ----------------
+ 
+ 
+ 
+ 
 
-ENGINE_BIN = "stockfish"
+def load_engine():
 
-def ensure_stockfish():
-    # If already present, use it
-    if os.path.exists(ENGINE_BIN):
-        return ENGINE_BIN
+    engine_path = "stockfish"
 
-    # Download Linux binary (works on Streamlit Cloud)
-    url = "https://github.com/official-stockfish/Stockfish/releases/latest/download/stockfish-ubuntu-x86-64-avx2.zip"
-    zip_name = "stockfish.zip"
+    if not os.path.exists(engine_path):
 
-    st.info("Downloading Stockfish engine... (first run only)")
+        with zipfile.ZipFile("stockfish.zip","r") as zip_ref:
+            zip_ref.extractall(".")
 
-    urllib.request.urlretrieve(url, zip_name)
+        os.chmod(engine_path, os.stat(engine_path).st_mode | stat.S_IEXEC)
 
-    with zipfile.ZipFile(zip_name, "r") as z:
-        z.extractall(".")
+    return chess.engine.SimpleEngine.popen_uci("./stockfish")
 
     # Find extracted binary
     engine_path = None
@@ -57,9 +55,7 @@ def ensure_stockfish():
     return ENGINE_BIN
 
 
-def load_engine():
-    path = ensure_stockfish()
-    return chess.engine.SimpleEngine.popen_uci(path)
+ 
 
 # ---------------- PAGE ----------------
 
