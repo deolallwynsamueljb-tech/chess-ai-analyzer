@@ -5,38 +5,61 @@ import chess.engine
 import chess.svg
 import matplotlib.pyplot as plt
 import io
-from streamlit.components.v1 import html
 import os
-import shutil
- 
- 
-# ---------------- ENGINE LOADER ----------------
+import urllib.request
+import zipfile
+import stat
+from streamlit.components.v1 import html
 
-import chess.engine
-from stockfish import Stockfish
+# ---------------- ENGINE SETUP ----------------
+
+ENGINE_BIN = "stockfish"
+
+def ensure_stockfish():
+    # If already present, use it
+    if os.path.exists(ENGINE_BIN):
+        return ENGINE_BIN
+
+    # Download Linux binary (works on Streamlit Cloud)
+    url = "https://github.com/official-stockfish/Stockfish/releases/latest/download/stockfish-ubuntu-x86-64-avx2.zip"
+    zip_name = "stockfish.zip"
+
+    st.info("Downloading Stockfish engine... (first run only)")
+
+    urllib.request.urlretrieve(url, zip_name)
+
+    with zipfile.ZipFile(zip_name, "r") as z:
+        z.extractall(".")
+
+    # Find extracted binary
+    engine_path = None
+    for root, dirs, files in os.walk("."):
+        for f in files:
+            if f.startswith("stockfish") and os.access(os.path.join(root, f), os.X_OK):
+                engine_path = os.path.join(root, f)
+
+    # If not executable yet, still accept and chmod
+    if engine_path is None:
+        for root, dirs, files in os.walk("."):
+            for f in files:
+                if f.startswith("stockfish"):
+                    engine_path = os.path.join(root, f)
+
+    if engine_path is None:
+        raise RuntimeError("Stockfish binary not found after extraction.")
+
+    # Move to project root with a simple name
+    os.rename(engine_path, ENGINE_BIN)
+
+    # Make executable
+    os.chmod(ENGINE_BIN, os.stat(ENGINE_BIN).st_mode | stat.S_IEXEC)
+
+    return ENGINE_BIN
+
 
 def load_engine():
-
-    # create stockfish instance from python package
-    sf = Stockfish()
-
-    # get the binary path
-    engine_path = sf._stockfish_executable
-
-    return chess.engine.SimpleEngine.popen_uci(engine_path)
-
-    # Common Linux locations (Streamlit Cloud)
-    possible_paths = [
-        "/usr/games/stockfish",
-        "/usr/bin/stockfish",
-        "/home/adminuser/venv/bin/stockfish"
-    ]
-
-    for p in possible_paths:
-        if os.path.exists(p):
-            return chess.engine.SimpleEngine.popen_uci(p)
-
-    raise RuntimeError("Stockfish engine not found")
+    path = ensure_stockfish()
+    return chess.engine.SimpleEngine.popen_uci(path)
 
 # ---------------- PAGE ----------------
 
@@ -48,22 +71,12 @@ st.title("♟ Chess AI Analyzer")
 st.sidebar.header("Game Input")
 
 uploaded_file = st.sidebar.file_uploader("Upload PGN", type=["pgn"])
-
-pgn_text = st.sidebar.text_area(
-    "Or paste PGN here",
-    height=200
-)
-
+pgn_text = st.sidebar.text_area("Or paste PGN here", height=200)
 depth = st.sidebar.slider("Engine Depth", 8, 20, 12)
-
-# ---------------- ENGINE ----------------
-
- 
 
 # ---------------- MOVE CLASSIFICATION ----------------
 
 def classify_move(prev_eval, new_eval):
-
     if prev_eval is None:
         return ""
 
@@ -83,14 +96,12 @@ def classify_move(prev_eval, new_eval):
 # ---------------- ACCURACY ----------------
 
 def compute_accuracy(evals):
-
     score = 0
+    for i in range(1, len(evals)):
+        diff = abs(evals[i] - evals[i - 1])
+        score += max(0, 100 - diff / 10)
 
-    for i in range(1,len(evals)):
-        diff = abs(evals[i] - evals[i-1])
-        score += max(0,100 - diff/10)
-
-    return round(score/max(1,len(evals)),1)
+    return round(score / max(1, len(evals)), 1)
 
 # ---------------- ANALYSIS ----------------
 
@@ -108,7 +119,6 @@ def analyze_game(pgn_string, depth):
     best_moves = []
 
     prev_eval = None
-
     analysis_board = board.copy()
 
     for move in game.mainline_moves():
@@ -121,13 +131,12 @@ def analyze_game(pgn_string, depth):
         )
 
         score = info["score"].white().score(mate_score=10000)
-
         best = info["pv"][0]
 
         moves.append(move)
         evaluations.append(score)
 
-        cls = classify_move(prev_eval,score)
+        cls = classify_move(prev_eval, score)
         classifications.append(cls)
 
         best_moves.append(best)
@@ -136,7 +145,7 @@ def analyze_game(pgn_string, depth):
 
     engine.quit()
 
-    return game,moves,evaluations,classifications,best_moves
+    return game, moves, evaluations, classifications, best_moves
 
 # ---------------- LOAD GAME ----------------
 
@@ -144,31 +153,25 @@ game = None
 
 if uploaded_file is not None:
     pgn_string = uploaded_file.read().decode()
-    game,moves,evaluations,classifications,best_moves = analyze_game(pgn_string,depth)
+    game, moves, evaluations, classifications, best_moves = analyze_game(pgn_string, depth)
 
 elif pgn_text.strip() != "":
     pgn_string = pgn_text
-    game,moves,evaluations,classifications,best_moves = analyze_game(pgn_string,depth)
+    game, moves, evaluations, classifications, best_moves = analyze_game(pgn_string, depth)
 
 # ---------------- DEFAULT BOARD ----------------
 
 if game is None:
-
     board = chess.Board()
-
     st.info("Upload or paste a PGN to analyze.")
-
-    board_svg = chess.svg.board(board=board,size=720)
-
-    html(board_svg,height=750)
-
+    board_svg = chess.svg.board(board=board, size=720)
+    html(board_svg, height=750)
     st.stop()
 
-# ---------------- ACCURACY DISPLAY ----------------
+# ---------------- ACCURACY ----------------
 
 accuracy = compute_accuracy(evaluations)
-
-st.metric("Game Accuracy",f"{accuracy}%")
+st.metric("Game Accuracy", f"{accuracy}%")
 
 # ---------------- SESSION STATE ----------------
 
@@ -182,62 +185,48 @@ move_index = st.session_state.move_index
 board = game.board()
 temp_board = board.copy()
 
-for i in range(move_index+1):
+for i in range(move_index + 1):
     temp_board.push(moves[i])
 
 # ---------------- LAYOUT ----------------
 
-eval_col,board_col,moves_col = st.columns([0.6,6,2])
+eval_col, board_col, moves_col = st.columns([0.6, 6, 2])
 
 # ---------------- EVAL BAR ----------------
 
 with eval_col:
-
     score = evaluations[move_index]
 
     cap = 400
-    score = max(min(score,cap),-cap)
+    score = max(min(score, cap), -cap)
 
-    white_percent = (score + cap) / (2*cap)
-    black_percent = 1-white_percent
+    white_percent = (score + cap) / (2 * cap)
+    black_percent = 1 - white_percent
 
     st.markdown(
-    f"""
-    <div style="
-        height:720px;
-        width:28px;
-        border-radius:6px;
-        overflow:hidden;
-        border:1px solid #444;
-    ">
-        <div style="background:black;height:{black_percent*100}%"></div>
-        <div style="background:white;height:{white_percent*100}%"></div>
-    </div>
-    """,
-    unsafe_allow_html=True
+        f"""
+        <div style="height:720px;width:28px;border-radius:6px;overflow:hidden;border:1px solid #444;">
+            <div style="background:black;height:{black_percent*100}%"></div>
+            <div style="background:white;height:{white_percent*100}%"></div>
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
 # ---------------- BOARD ----------------
 
 with board_col:
 
-    arrow=None
+    arrow = None
 
     if move_index < len(best_moves):
-
         best = best_moves[move_index]
+        arrow = [chess.svg.Arrow(best.from_square, best.to_square, color="#00FF00")]
 
-        arrow=[chess.svg.Arrow(best.from_square,best.to_square,color="#00FF00")]
+    board_svg = chess.svg.board(board=temp_board, size=720, arrows=arrow)
+    html(board_svg, height=750)
 
-    board_svg = chess.svg.board(
-        board=temp_board,
-        size=720,
-        arrows=arrow
-    )
-
-    html(board_svg,height=750)
-
-    c1,c2,c3,c4 = st.columns(4)
+    c1, c2, c3, c4 = st.columns(4)
 
     with c1:
         if st.button("⏮ Start"):
@@ -245,43 +234,40 @@ with board_col:
 
     with c2:
         if st.button("◀ Prev"):
-            if st.session_state.move_index>0:
-                st.session_state.move_index-=1
+            if st.session_state.move_index > 0:
+                st.session_state.move_index -= 1
 
     with c3:
         if st.button("Next ▶"):
-            if st.session_state.move_index<len(moves)-1:
-                st.session_state.move_index+=1
+            if st.session_state.move_index < len(moves) - 1:
+                st.session_state.move_index += 1
 
     with c4:
         if st.button("End ⏭"):
-            st.session_state.move_index=len(moves)-1
+            st.session_state.move_index = len(moves) - 1
 
 # ---------------- MOVE LIST ----------------
 
 with moves_col:
-
     st.subheader("Moves")
 
     san_board = board.copy()
+    move_text = ""
 
-    move_text=""
+    for i, move in enumerate(moves):
 
-    for i,move in enumerate(moves):
+        if i % 2 == 0:
+            move_text += f"{i//2+1}. "
 
-        if i%2==0:
-            move_text+=f"{i//2+1}. "
+        move_san = san_board.san(move)
+        move_san += f" {classifications[i]}"
 
-        move_san=san_board.san(move)
-
-        move_san+=f" {classifications[i]}"
-
-        move_text+=move_san+" "
+        move_text += move_san + " "
 
         san_board.push(move)
 
-        if i%2==1:
-            move_text+="\n"
+        if i % 2 == 1:
+            move_text += "\n"
 
     st.text(move_text)
 
@@ -289,14 +275,11 @@ with moves_col:
 
 st.subheader("Engine Evaluation")
 
-fig,ax = plt.subplots(figsize=(12,4))
-
-ax.plot(evaluations,linewidth=2)
+fig, ax = plt.subplots(figsize=(12, 4))
+ax.plot(evaluations, linewidth=2)
 ax.axhline(0)
-
 ax.set_xlabel("Move Number")
 ax.set_ylabel("Centipawn Evaluation")
-
 ax.grid(True)
 
 st.pyplot(fig)
