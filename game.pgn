@@ -1,0 +1,66 @@
+[Event "Example Game"]
+[Site "Local"]
+[Date "2026.03.14"]
+[Round "?"]
+[White "Deol"]
+[Black "Opponent"]
+[Result "1-0"]
+
+1. e4 e5 
+2. Nf3 Nc6 
+3. Bb5 a6 
+4. Ba4 Nf6 
+5. O-O Be7 
+6. Re1 b5 
+7. Bb3 d6 
+8. c3 O-O 
+9. h3 Nb8 
+10. d4 Nbd7 
+11. c4 Bb7 
+12. Nc3 b4 
+13. Nd5 Nxd5 
+14. cxd5 Bf6 
+15. Be3 exd4 
+16. Nxd4 Nc5 
+17. Bc2 Re8 
+18. f3 Bxd5 
+19. exd5 Rxe3 
+20. Rxe3 Qg5 
+21. Re2 Qxd5 
+22. Nb3 Qxd1+ 
+23. Rxd1 Nxb3 
+24. Bxb3 a5 
+25. Rde1 g6 
+26. Re8+ Rxe8 
+27. Rxe8+ Kg7 
+28. Rc8 c5 
+29. Rc7 Bxb2 
+30. Rxf7+ Kh6 
+31. Rd7 Be5 
+32. Bg8 Kg5 
+33. Rxh7 Kf4 
+34. Kf2 Bd4+ 
+35. Ke2 Kg3 
+36. Kf1 a4 
+37. Ra7 a3 
+38. Ra6 Be5 
+39. Bb3 Kf4 
+40. Ke2 Kg3 
+41. Kf1 Kf4 
+42. Bd5 Ke3 
+43. Ra7 Kd4 
+44. Bb3 Kc3 
+45. Ke2 c4 
+46. Rc7 Kb2 
+47. Rxc4 Bc3 
+48. Kd3 Ka1 
+49. Rc6 Be5 
+50. Rc4 Kb2 
+51. Rxb4 Bc3 
+52. Rc4 Be5 
+53. Rc2+ Ka1 
+54. Kd2 Bf4+ 
+55. Kd1 Be5 
+56. Kc1 Bb2+ 
+57. Rxb2 axb2+ 
+58. Kc2 1-0
